@@ -20,8 +20,6 @@ from PyQt6.QtWidgets import (
     QMessageBox
 )
 
-from openpyxl import Workbook
-
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
@@ -40,7 +38,7 @@ SCIEZKA_PLIKU = os.path.join(
     "dane_50_fikcyjnych_pacjentow.xlsx"
 )
 
-# NOWY plik z wynikami
+# Nowy plik z wynikami
 SCIEZKA_WYNIKI = os.path.join(
     KATALOG_PROGRAMU,
     "wyniki_gui.xlsx"
@@ -427,9 +425,9 @@ class Okno(QWidget):
         przyciski = QHBoxLayout()
 
 
-        # --------------------------------------
+        # ======================================
         # POKAŻ DANE
-        # --------------------------------------
+        # ======================================
 
         self.przycisk = QPushButton(
             "🔎 Pokaż dane"
@@ -444,9 +442,9 @@ class Okno(QWidget):
         )
 
 
-        # --------------------------------------
+        # ======================================
         # ZAPISZ DO EXCELA
-        # --------------------------------------
+        # ======================================
 
         self.przycisk_excel = QPushButton(
             "📊 Zapisz wyniki do Excel"
@@ -459,9 +457,8 @@ class Okno(QWidget):
         przyciski.addWidget(
             self.przycisk_excel
         )
-        print("✅ EKSPORT DZIAŁA!")
-        print ("Git działa")
-        print("Git nadal działa")
+
+
         filtry_layout.addLayout(
             przyciski
         )
@@ -880,9 +877,8 @@ class Okno(QWidget):
 
     def eksport_do_excel(self):
 
-        # Pobieramy dokładnie te same dane,
-        # które są aktualnie widoczne w GUI
-        dane_excel = (
+        # Dane aktualnie wybrane przez filtry GUI
+        dane_wyniki = (
             self.pobierz_przefiltrowane_dane()
             .copy()
         )
@@ -891,151 +887,35 @@ class Okno(QWidget):
         try:
 
             # ======================================
-            # UTWORZENIE NOWEGO PLIKU
+            # UTWORZENIE NOWEGO PLIKU EXCEL
             # ======================================
 
-            book = Workbook()
+            with pd.ExcelWriter(
+                SCIEZKA_WYNIKI,
+                engine="openpyxl"
+            ) as writer:
 
 
-            # Pierwszy arkusz
-            arkusz = book.active
+                # ==================================
+                # ZAKŁADKA 1 – DANE ŹRÓDŁOWE
+                # ==================================
 
-            arkusz.title = (
-                "Wyniki GUI"
-            )
-
-
-            # ======================================
-            # NAGŁÓWKI
-            # ======================================
-
-            for kolumna, nazwa in enumerate(
-                dane_excel.columns,
-                start=1
-            ):
-
-                arkusz.cell(
-                    row=1,
-                    column=kolumna,
-                    value=nazwa
-                )
-
-
-            # ======================================
-            # DANE
-            # ======================================
-
-            for wiersz, dane_wiersza in enumerate(
-                dane_excel.itertuples(
+                dane.to_excel(
+                    writer,
+                    sheet_name="Dane źródłowe",
                     index=False
-                ),
-                start=2
-            ):
-
-                for kolumna, wartosc in enumerate(
-                    dane_wiersza,
-                    start=1
-                ):
-
-                    # Puste wartości
-                    if pd.isna(wartosc):
-
-                        wartosc = None
-
-
-                    # Konwersja typów numpy
-                    if hasattr(
-                        wartosc,
-                        "item"
-                    ):
-
-                        try:
-
-                            wartosc = (
-                                wartosc.item()
-                            )
-
-                        except Exception:
-
-                            pass
-
-
-                    # Nietypowe wartości
-                    # zamieniamy na tekst
-                    if not isinstance(
-                        wartosc,
-                        (
-                            str,
-                            int,
-                            float,
-                            bool,
-                            type(None)
-                        )
-                    ):
-
-                        wartosc = str(
-                            wartosc
-                        )
-
-
-                    arkusz.cell(
-                        row=wiersz,
-                        column=kolumna,
-                        value=wartosc
-                    )
-
-
-            # ======================================
-            # SZEROKOŚĆ KOLUMN
-            # ======================================
-
-            for kolumna in arkusz.columns:
-
-                maksymalna_dlugosc = 0
-
-                litera = (
-                    kolumna[0].column_letter
                 )
 
 
-                for komorka in kolumna:
+                # ==================================
+                # ZAKŁADKA 2 – PLIK GUI
+                # ==================================
 
-                    if komorka.value is not None:
-
-                        dlugosc = len(
-                            str(
-                                komorka.value
-                            )
-                        )
-
-                        maksymalna_dlugosc = max(
-                            maksymalna_dlugosc,
-                            dlugosc
-                        )
-
-
-                arkusz.column_dimensions[
-                    litera
-                ].width = min(
-                    maksymalna_dlugosc + 2,
-                    35
+                dane_wyniki.to_excel(
+                    writer,
+                    sheet_name="Plik GUI",
+                    index=False
                 )
-
-
-            # ======================================
-            # ZAMROŻENIE NAGŁÓWKA
-            # ======================================
-
-            arkusz.freeze_panes = "A2"
-
-
-            # ======================================
-            # ZAPIS NOWEGO PLIKU
-            # ======================================
-
-            book.save(
-                SCIEZKA_WYNIKI
-            )
 
 
             # ======================================
@@ -1070,11 +950,13 @@ class Okno(QWidget):
             QMessageBox.information(
                 self,
                 "Zapisano",
-                "Utworzono nowy plik Excel!\n\n"
-                "Nazwa pliku:\n"
+                "Utworzono plik:\n"
                 "wyniki_gui.xlsx\n\n"
-                f"Liczba pacjentów: "
-                f"{len(dane_excel)}"
+                "Zakładki:\n"
+                "1. Dane źródłowe\n"
+                "2. Plik GUI\n\n"
+                f"Dane źródłowe: {len(dane)} pacjentów\n"
+                f"Po filtrach GUI: {len(dane_wyniki)} pacjentów"
             )
 
 
@@ -1084,8 +966,8 @@ class Okno(QWidget):
                 self,
                 "Błąd zapisu",
                 "Nie można zapisać pliku.\n\n"
-                "Plik 'wyniki_gui.xlsx' może być "
-                "aktualnie otwarty w Excelu.\n\n"
+                "Plik 'wyniki_gui.xlsx' jest prawdopodobnie "
+                "otwarty w Excelu.\n\n"
                 "Zamknij go i spróbuj ponownie."
             )
 
