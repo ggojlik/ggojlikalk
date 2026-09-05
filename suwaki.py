@@ -460,7 +460,7 @@ class Okno(QWidget):
             self.przycisk_excel
         )
         print("✅ EKSPORT DZIAŁA!")
-
+        print ("Git działa")
         filtry_layout.addLayout(
             przyciski
         )
