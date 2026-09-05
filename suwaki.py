@@ -461,6 +461,7 @@ class Okno(QWidget):
         )
         print("✅ EKSPORT DZIAŁA!")
         print ("Git działa")
+        print("Git nadal działa")
         filtry_layout.addLayout(
             przyciski
         )
