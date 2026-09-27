@@ -425,22 +425,118 @@ def pokaz_wykres():
     # Liczebności kategorii
     liczebnosci = dane.value_counts()
 
-    plt.figure(figsize=(9, 5))
+    plt.figure(figsize=(10, 6))
 
     ax = liczebnosci.plot(
-        kind="bar"
+        kind="bar",
+        width=0.7
     )
 
+    # Liczebności nad słupkami
     for kontener in ax.containers:
         ax.bar_label(
             kontener,
-            padding=3,
+            padding=4,
             fontsize=10
         )
 
+    # Ładniejsza nazwa zmiennej
+    ladna_nazwa = zmienna.replace("_", " ").title()
+
+    # Główny tytuł
     plt.title(
-        f"Rozkład zmiennej: {zmienna}"
+        f"Rozkład: {ladna_nazwa}",
+        fontsize=16,
+        fontweight="bold",
+        pad=25
     )
+
+    # Aktywne filtry
+    aktywne_filtry = []
+
+    filtr1 = wybrany_filtr.get()
+    wartosc1 = wybrana_wartosc_filtra.get()
+
+    if filtr1 != "Brak filtra" and filtr1 and wartosc1:
+        nazwa_filtra1 = filtr1.replace("_", " ").title()
+        aktywne_filtry.append(
+            f"{nazwa_filtra1}: {wartosc1}"
+        )
+
+    filtr2 = wybrany_filtr2.get()
+    wartosc2 = wybrana_wartosc_filtra2.get()
+
+    if filtr2 != "Brak filtra" and filtr2 and wartosc2:
+        nazwa_filtra2 = filtr2.replace("_", " ").title()
+        aktywne_filtry.append(
+            f"{nazwa_filtra2}: {wartosc2}"
+        )
+
+    # Filtry jako subtelny podtytuł
+    if aktywne_filtry:
+        ax.text(
+            0.5,
+            1.02,
+            "  •  ".join(aktywne_filtry),
+            transform=ax.transAxes,
+            ha="center",
+            fontsize=10
+        )
+
+    # Opisy osi
+    plt.xlabel("")
+    plt.ylabel(
+        "Liczba obserwacji",
+        fontsize=11
+    )
+
+    plt.xticks(
+        rotation=30,
+        ha="right"
+    )
+
+    # Delikatna siatka tylko pozioma
+    ax.yaxis.grid(
+        True,
+        linestyle="--",
+        alpha=0.25
+    )
+
+    ax.set_axisbelow(True)
+
+    # Usunięcie zbędnych ramek
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    plt.tight_layout()
+    plt.show()
+
+    # Tworzenie informacji o aktywnych filtrach
+    aktywne_filtry = []
+
+    filtr1 = wybrany_filtr.get()
+    wartosc1 = wybrana_wartosc_filtra.get()
+
+    if filtr1 != "Brak filtra" and filtr1 and wartosc1:
+        aktywne_filtry.append(
+            f"{filtr1} = {wartosc1}"
+        )
+
+    filtr2 = wybrany_filtr2.get()
+    wartosc2 = wybrana_wartosc_filtra2.get()
+
+    if filtr2 != "Brak filtra" and filtr2 and wartosc2:
+        aktywne_filtry.append(
+            f"{filtr2} = {wartosc2}"
+        )
+
+    # Tytuł wykresu
+    tytul = f"Rozkład zmiennej: {zmienna}"
+
+    if aktywne_filtry:
+        tytul += "\nFiltry: " + " | ".join(aktywne_filtry)
+
+    plt.title(tytul)
 
     plt.xlabel(zmienna)
     plt.ylabel("Liczebność")
