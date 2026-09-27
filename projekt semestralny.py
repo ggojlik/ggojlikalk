@@ -89,94 +89,143 @@ def pobierz_mape_etykiet(zmienna):
 
 import tkinter as tk
 from tkinter import ttk
+import matplotlib.pyplot as plt
 
 
-# Utworzenie okna
 root = tk.Tk()
+root.title("Analiza danych")
+root.geometry("950x700")
+root.minsize(800, 600)
 
-root.title("Projekt semestralny - Analiza danych")
 
-root.geometry("850x600")
+# -------------------------
+# NAGŁÓWEK
+# -------------------------
 
-
-# Nagłówek
-naglowek = tk.Label(
+naglowek = ttk.Label(
     root,
-    text="Analiza danych - 500 rekordów",
-    font=("Arial", 18, "bold")
+    text="Analiza danych",
+    font=("Arial", 22, "bold")
 )
+naglowek.pack(pady=(20, 5))
 
-naglowek.pack(pady=20)
-
-
-# Informacja o liczbie rekordów
-informacja = tk.Label(
+informacja = ttk.Label(
     root,
-    text=f"Liczba rekordów: {len(df)} | Liczba dostępnych zmiennych: {len(wspolne_zmienne)}",
+    text=f"Liczba rekordów: {len(df)}   |   "
+         f"Liczba dostępnych zmiennych: {len(wspolne_zmienne)}",
     font=("Arial", 11)
 )
+informacja.pack(pady=(0, 20))
 
-informacja.pack(pady=10)
 
+# -------------------------
+# PANEL WYBORU ZMIENNEJ
+# -------------------------
 
-# Wybór zmiennej
-etykieta = tk.Label(
+panel = ttk.LabelFrame(
     root,
-    text="Wybierz zmienną do analizy:",
-    font=("Arial", 12)
+    text=" Wybór zmiennej ",
+    padding=15
 )
+panel.pack(fill="x", padx=30, pady=10)
 
-etykieta.pack(pady=10)
-
+ttk.Label(
+    panel,
+    text="Zmienna:",
+    font=("Arial", 11)
+).grid(row=0, column=0, padx=10, pady=5)
 
 wybrana_zmienna = tk.StringVar()
 
 lista_zmiennych = ttk.Combobox(
-    root,
+    panel,
     textvariable=wybrana_zmienna,
     values=wspolne_zmienne,
     state="readonly",
-    width=40
+    width=35
 )
+lista_zmiennych.grid(row=0, column=1, padx=10, pady=5)
 
-lista_zmiennych.pack(pady=10)
+if wspolne_zmienne:
+    lista_zmiennych.current(0)
 
 
-# Pole wyświetlania wyników
-wyniki = tk.Text(
+# -------------------------
+# POLE WYNIKÓW
+# -------------------------
+
+ramka_wyniki = ttk.LabelFrame(
     root,
-    height=18,
-    width=90
+    text=" Wyniki analizy ",
+    padding=10
+)
+ramka_wyniki.pack(
+    fill="both",
+    expand=True,
+    padx=30,
+    pady=15
 )
 
-wyniki.pack(pady=20)
+wyniki = tk.Text(
+    ramka_wyniki,
+    height=20,
+    width=90,
+    font=("Consolas", 10),
+    wrap="none"
+)
+
+scroll_y = ttk.Scrollbar(
+    ramka_wyniki,
+    orient="vertical",
+    command=wyniki.yview
+)
+
+wyniki.configure(yscrollcommand=scroll_y.set)
+
+wyniki.pack(
+    side="left",
+    fill="both",
+    expand=True
+)
+
+scroll_y.pack(
+    side="right",
+    fill="y"
+)
 
 
-# Funkcja wyświetlająca dane
+# -------------------------
+# FUNKCJE
+# -------------------------
+
+def pobierz_dane_opisane(zmienna):
+
+    mapa_etykiet = pobierz_mape_etykiet(zmienna)
+
+    dane = df[zmienna].copy()
+
+    if mapa_etykiet:
+        return dane.map(mapa_etykiet).fillna(dane)
+
+    return dane
+
+
 def pokaz_dane():
+
     zmienna = wybrana_zmienna.get()
 
     if not zmienna:
         return
 
+    dane = pobierz_dane_opisane(zmienna)
+
     wyniki.delete("1.0", tk.END)
-
-    # Pobieramy mapowanie kod -> opis
-    mapa_etykiet = pobierz_mape_etykiet(zmienna)
-
-    # Kopia wybranej kolumny
-    dane = df[zmienna].copy()
-
-    # Jeśli dla zmiennej istnieją etykiety,
-    # zamieniamy kody na opisy
-    if mapa_etykiet:
-        dane_opisane = dane.map(mapa_etykiet).fillna(dane)
-    else:
-        dane_opisane = dane
 
     wyniki.insert(
         tk.END,
-        f"Wybrana zmienna: {zmienna}\n\n"
+        f"ZMIENNA: {zmienna}\n"
+        + "=" * 60
+        + "\n\n"
     )
 
     wyniki.insert(
@@ -186,23 +235,117 @@ def pokaz_dane():
 
     wyniki.insert(
         tk.END,
-        dane_opisane.head(20).to_string()
+        dane.head(20).to_string()
     )
 
 
-# Przycisk
-przycisk = tk.Button(
-    root,
+def pokaz_statystyki():
+
+    zmienna = wybrana_zmienna.get()
+
+    if not zmienna:
+        return
+
+    dane = pobierz_dane_opisane(zmienna)
+
+    liczebnosci = dane.value_counts(dropna=False)
+    procenty = dane.value_counts(
+        normalize=True,
+        dropna=False
+    ) * 100
+
+    tabela = pd.DataFrame({
+        "Liczebność": liczebnosci,
+        "Procent [%]": procenty.round(2)
+    })
+
+    wyniki.delete("1.0", tk.END)
+
+    wyniki.insert(
+        tk.END,
+        f"STATYSTYKI: {zmienna}\n"
+        + "=" * 60
+        + "\n\n"
+    )
+
+    wyniki.insert(
+        tk.END,
+        tabela.to_string()
+    )
+
+
+def pokaz_wykres():
+
+    zmienna = wybrana_zmienna.get()
+
+    if not zmienna:
+        return
+
+    dane = pobierz_dane_opisane(zmienna)
+
+    liczebnosci = dane.value_counts()
+
+    plt.figure(figsize=(9, 5))
+
+    liczebnosci.plot(
+        kind="bar"
+    )
+
+    plt.title(
+        f"Rozkład zmiennej: {zmienna}"
+    )
+
+    plt.xlabel(zmienna)
+    plt.ylabel("Liczebność")
+
+    plt.xticks(
+        rotation=45,
+        ha="right"
+    )
+
+    plt.tight_layout()
+    plt.show()
+
+
+# -------------------------
+# PRZYCISKI
+# -------------------------
+
+przyciski = ttk.Frame(root)
+przyciski.pack(pady=(0, 20))
+
+ttk.Button(
+    przyciski,
     text="Pokaż dane",
     command=pokaz_dane,
-    font=("Arial", 11),
-    width=20
+    width=18
+).grid(
+    row=0,
+    column=0,
+    padx=8
 )
 
-przycisk.pack(pady=10)
+ttk.Button(
+    przyciski,
+    text="Statystyki",
+    command=pokaz_statystyki,
+    width=18
+).grid(
+    row=0,
+    column=1,
+    padx=8
+)
+
+ttk.Button(
+    przyciski,
+    text="Wykres",
+    command=pokaz_wykres,
+    width=18
+).grid(
+    row=0,
+    column=2,
+    padx=8
+)
 
 
-# Uruchomienie aplikacji
 root.mainloop()
-
-print(slownik.head(10))
