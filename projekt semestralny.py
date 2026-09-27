@@ -317,6 +317,18 @@ def pobierz_dane_opisane(zmienna):
 
     return dane
 
+def pobierz_nazwe_zmiennej(zmienna):
+    fragment = slownik[
+        slownik["Variable"].str.lower() == zmienna.lower()
+    ]
+
+    etykiety = fragment["Label"].dropna()
+
+    if not etykiety.empty:
+        return str(etykiety.iloc[0])
+
+    return zmienna.replace("_", " ").title()
+
 
 def pokaz_dane():
 
@@ -329,10 +341,23 @@ def pokaz_dane():
 
     mapa_etykiet = pobierz_mape_etykiet(zmienna)
 
+    print("UNIKALNE WARTOŚCI:", df_filtr[zmienna].unique())
+
     dane = df_filtr[zmienna].copy()
 
-    if mapa_etykiet:
-        dane = dane.map(mapa_etykiet).fillna(dane)
+    # Usunięcie specjalnych kodów braków danych
+    dane_tekst = dane.astype(str).str.strip()
+
+    dane = dane[
+        ~dane_tekst.isin([
+            "-99",
+            "-99.0",
+            "-77",
+            "-77.0"
+        ])
+    ]
+
+    mapa_etykiet = pobierz_mape_etykiet(zmienna)
 
     wyniki.delete("1.0", tk.END)
 
@@ -622,13 +647,32 @@ def aktualizuj_filtr(zmienna_var, lista_wartosci, wartosc_var):
 
     dane_opisane = pobierz_dane_opisane(zmienna)
 
+    def pobierz_nazwe_zmiennej(zmienna):
+        fragment = slownik[
+            slownik["Variable"].str.lower() == zmienna.lower()
+            ]
+
+        etykiety = fragment["Label"].dropna()
+
+        if not etykiety.empty:
+            return str(etykiety.iloc[0])
+
+        return zmienna.replace("_", " ").title()
+
     wartosci = (
         dane_opisane
         .dropna()
         .astype(str)
+        .str.strip()
         .unique()
         .tolist()
     )
+
+    # Usunięcie specjalnych kodów braków danych
+    wartosci = [
+        wartosc for wartosc in wartosci
+        if wartosc not in ["-99", "-99.0", "-77", "-77.0"]
+    ]
 
     wartosci = sorted(wartosci)
 
@@ -729,5 +773,9 @@ def wyczysc_filtry():
 
     lista_wartosci_filtra["values"] = []
     lista_wartosci_filtra2["values"] = []
+
+print("sex ->", pobierz_nazwe_zmiennej("sex"))
+print("bmi_group ->", pobierz_nazwe_zmiennej("bmi_group"))
+print("smoking ->", pobierz_nazwe_zmiennej("smoking"))
 
 root.mainloop()
