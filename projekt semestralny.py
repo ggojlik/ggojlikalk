@@ -149,6 +149,62 @@ lista_zmiennych.grid(row=0, column=1, padx=10, pady=5)
 if wspolne_zmienne:
     lista_zmiennych.current(0)
 
+# -------------------------
+# PANEL FILTROWANIA
+# -------------------------
+
+panel_filtr = ttk.LabelFrame(
+    root,
+    text=" Filtrowanie danych ",
+    padding=15
+)
+panel_filtr.pack(fill="x", padx=30, pady=10)
+
+ttk.Label(
+    panel_filtr,
+    text="Filtruj według:"
+).grid(row=0, column=0, padx=10, pady=5)
+
+wybrany_filtr = tk.StringVar()
+
+lista_filtrow = ttk.Combobox(
+    panel_filtr,
+    textvariable=wybrany_filtr,
+    values=["Brak filtra"] + wspolne_zmienne,
+    state="readonly",
+    width=25
+)
+
+lista_filtrow.grid(
+    row=0,
+    column=1,
+    padx=10,
+    pady=5
+)
+
+lista_filtrow.current(0)
+
+
+ttk.Label(
+    panel_filtr,
+    text="Wartość:"
+).grid(row=0, column=2, padx=10, pady=5)
+
+wybrana_wartosc_filtra = tk.StringVar()
+
+lista_wartosci_filtra = ttk.Combobox(
+    panel_filtr,
+    textvariable=wybrana_wartosc_filtra,
+    state="readonly",
+    width=25
+)
+
+lista_wartosci_filtra.grid(
+    row=0,
+    column=3,
+    padx=10,
+    pady=5
+)
 
 # -------------------------
 # POLE WYNIKÓW
@@ -217,9 +273,21 @@ def pokaz_dane():
     if not zmienna:
         return
 
-    dane = pobierz_dane_opisane(zmienna)
+    df_filtr = pobierz_przefiltrowane_dane()
+
+    mapa_etykiet = pobierz_mape_etykiet(zmienna)
+
+    dane = df_filtr[zmienna].copy()
+
+    if mapa_etykiet:
+        dane = dane.map(mapa_etykiet).fillna(dane)
 
     wyniki.delete("1.0", tk.END)
+
+    wyniki.insert(
+        tk.END,
+        f"Liczba rekordów po filtrowaniu: {len(df_filtr)}\n\n"
+    )
 
     wyniki.insert(
         tk.END,
@@ -247,6 +315,15 @@ def pokaz_statystyki():
         return
 
     dane = pobierz_dane_opisane(zmienna)
+
+    df_filtr = pobierz_przefiltrowane_dane()
+
+    mapa_etykiet = pobierz_mape_etykiet(zmienna)
+
+    dane = df_filtr[zmienna].copy()
+
+    if mapa_etykiet:
+        dane = dane.map(mapa_etykiet).fillna(dane)
 
     liczebnosci = dane.value_counts(dropna=False)
     procenty = dane.value_counts(
@@ -347,5 +424,55 @@ ttk.Button(
     padx=8
 )
 
+def aktualizuj_wartosci_filtra(event=None):
+
+    zmienna = wybrany_filtr.get()
+
+    if zmienna == "Brak filtra":
+        lista_wartosci_filtra["values"] = []
+        wybrana_wartosc_filtra.set("")
+        return
+
+    dane_opisane = pobierz_dane_opisane(zmienna)
+
+    wartosci = (
+        dane_opisane
+        .dropna()
+        .astype(str)
+        .unique()
+        .tolist()
+    )
+
+    wartosci = sorted(wartosci)
+
+    lista_wartosci_filtra["values"] = wartosci
+
+    if wartosci:
+        lista_wartosci_filtra.current(0)
+
+lista_filtrow.bind(
+    "<<ComboboxSelected>>",
+    aktualizuj_wartosci_filtra
+)
+
+def pobierz_przefiltrowane_dane():
+
+    filtr = wybrany_filtr.get()
+    wartosc = wybrana_wartosc_filtra.get()
+
+    # Bez filtra -> cały zbiór
+    if filtr == "Brak filtra" or not filtr:
+        return df.copy()
+
+    if not wartosc:
+        return df.copy()
+
+    # Pobieramy wersję z Label
+    dane_opisane = pobierz_dane_opisane(filtr)
+
+    # Porównujemy etykietę wybraną w GUI
+    maska = dane_opisane.astype(str) == str(wartosc)
+
+    return df[maska].copy()
 
 root.mainloop()
