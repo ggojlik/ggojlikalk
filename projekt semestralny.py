@@ -20,38 +20,17 @@ slownik = pd.read_excel(
     header=3
 )
 
-print("\n=== SPRAWDZAMY SŁOWNIK ===")
+# Czyszczenie nazw kolumn
+slownik.columns = slownik.columns.str.strip()
 
-print("Nazwy kolumn:")
-print(slownik.columns.tolist())
+# NAJPIERW uzupełniamy puste nazwy zmiennych
+slownik["Variable"] = slownik["Variable"].ffill()
 
-print("\nPierwsze 10 wierszy:")
-print(slownik.head(10).to_string())
+# DOPIERO POTEM zamieniamy na tekst i czyścimy spacje
+slownik["Variable"] = slownik["Variable"].astype(str).str.strip()
 
-print("\n=== KONIEC TESTU ===")
-
-print("\nNazwy kolumn w słowniku:")
-print(slownik.columns.tolist())
-
-print("\nPierwsze 10 wierszy:")
-print(slownik.head(10).to_string())
-
-print("Dane zostały poprawnie wczytane!")
-
-print("\nWymiary zbioru:")
-print(df.shape)
-
-print("\nPierwsze 5 rekordów:")
-print(df.head())
-
-print("\nInformacje o danych:")
-df.info()
-
-print("\nSłownik zmiennych:")
-print(slownik.shape)
-
-print("\nPierwsze wiersze słownika:")
-print(slownik.head())
+print("\nKontrola słownika:")
+print(slownik.head(10))
 
 # Nazwy zmiennych w danych głównych
 zmienne_dane = set(df.columns)
@@ -91,6 +70,22 @@ for zmienna in slownik["Variable"].dropna().unique():
 print("\nZmienne dostępne w GUI:")
 print(wspolne_zmienne)
 print("Liczba:", len(wspolne_zmienne))
+
+def pobierz_mape_etykiet(zmienna):
+    """
+    Zwraca słownik:
+    wartość z danych -> opis (Label)
+    """
+
+    # Znajdujemy nazwę zmiennej w słowniku
+    fragment = slownik[
+        slownik["Variable"].str.lower() == zmienna.lower()
+    ].copy()
+
+    # Usuwamy wiersze bez Value lub Label
+    fragment = fragment.dropna(subset=["Value", "Label"])
+
+    return dict(zip(fragment["Value"], fragment["Label"]))
 
 import tkinter as tk
 from tkinter import ttk
@@ -159,13 +154,25 @@ wyniki.pack(pady=20)
 
 # Funkcja wyświetlająca dane
 def pokaz_dane():
-
     zmienna = wybrana_zmienna.get()
 
     if not zmienna:
         return
 
     wyniki.delete("1.0", tk.END)
+
+    # Pobieramy mapowanie kod -> opis
+    mapa_etykiet = pobierz_mape_etykiet(zmienna)
+
+    # Kopia wybranej kolumny
+    dane = df[zmienna].copy()
+
+    # Jeśli dla zmiennej istnieją etykiety,
+    # zamieniamy kody na opisy
+    if mapa_etykiet:
+        dane_opisane = dane.map(mapa_etykiet).fillna(dane)
+    else:
+        dane_opisane = dane
 
     wyniki.insert(
         tk.END,
@@ -179,7 +186,7 @@ def pokaz_dane():
 
     wyniki.insert(
         tk.END,
-        df[zmienna].head(20).to_string()
+        dane_opisane.head(20).to_string()
     )
 
 
@@ -197,3 +204,5 @@ przycisk.pack(pady=10)
 
 # Uruchomienie aplikacji
 root.mainloop()
+
+print(slownik.head(10))
