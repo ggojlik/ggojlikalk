@@ -160,9 +160,12 @@ panel_filtr = ttk.LabelFrame(
 )
 panel_filtr.pack(fill="x", padx=30, pady=10)
 
+
+# ----- FILTR 1 -----
+
 ttk.Label(
     panel_filtr,
-    text="Filtruj według:"
+    text="Filtr 1:"
 ).grid(row=0, column=0, padx=10, pady=5)
 
 wybrany_filtr = tk.StringVar()
@@ -172,7 +175,7 @@ lista_filtrow = ttk.Combobox(
     textvariable=wybrany_filtr,
     values=["Brak filtra"] + wspolne_zmienne,
     state="readonly",
-    width=25
+    width=22
 )
 
 lista_filtrow.grid(
@@ -196,11 +199,60 @@ lista_wartosci_filtra = ttk.Combobox(
     panel_filtr,
     textvariable=wybrana_wartosc_filtra,
     state="readonly",
-    width=25
+    width=22
 )
 
 lista_wartosci_filtra.grid(
     row=0,
+    column=3,
+    padx=10,
+    pady=5
+)
+
+
+# ----- FILTR 2 -----
+
+ttk.Label(
+    panel_filtr,
+    text="Filtr 2:"
+).grid(row=1, column=0, padx=10, pady=5)
+
+wybrany_filtr2 = tk.StringVar()
+
+lista_filtrow2 = ttk.Combobox(
+    panel_filtr,
+    textvariable=wybrany_filtr2,
+    values=["Brak filtra"] + wspolne_zmienne,
+    state="readonly",
+    width=22
+)
+
+lista_filtrow2.grid(
+    row=1,
+    column=1,
+    padx=10,
+    pady=5
+)
+
+lista_filtrow2.current(0)
+
+
+ttk.Label(
+    panel_filtr,
+    text="Wartość:"
+).grid(row=1, column=2, padx=10, pady=5)
+
+wybrana_wartosc_filtra2 = tk.StringVar()
+
+lista_wartosci_filtra2 = ttk.Combobox(
+    panel_filtr,
+    textvariable=wybrana_wartosc_filtra2,
+    state="readonly",
+    width=22
+)
+
+lista_wartosci_filtra2.grid(
+    row=1,
     column=3,
     padx=10,
     pady=5
@@ -388,6 +440,16 @@ def pokaz_wykres():
 # PRZYCISKI
 # -------------------------
 
+def wyczysc_filtry():
+    lista_filtrow.current(0)
+    lista_filtrow2.current(0)
+
+    wybrana_wartosc_filtra.set("")
+    wybrana_wartosc_filtra2.set("")
+
+    lista_wartosci_filtra["values"] = []
+    lista_wartosci_filtra2["values"] = []
+
 przyciski = ttk.Frame(root)
 przyciski.pack(pady=(0, 20))
 
@@ -424,13 +486,24 @@ ttk.Button(
     padx=8
 )
 
-def aktualizuj_wartosci_filtra(event=None):
+ttk.Button(
+    przyciski,
+    text="Wyczyść filtry",
+    command=wyczysc_filtry,
+    width=18
+).grid(
+    row=0,
+    column=3,
+    padx=8
+)
 
-    zmienna = wybrany_filtr.get()
+def aktualizuj_filtr(zmienna_var, lista_wartosci, wartosc_var):
 
-    if zmienna == "Brak filtra":
-        lista_wartosci_filtra["values"] = []
-        wybrana_wartosc_filtra.set("")
+    zmienna = zmienna_var.get()
+
+    if zmienna == "Brak filtra" or not zmienna:
+        lista_wartosci["values"] = []
+        wartosc_var.set("")
         return
 
     dane_opisane = pobierz_dane_opisane(zmienna)
@@ -445,28 +518,85 @@ def aktualizuj_wartosci_filtra(event=None):
 
     wartosci = sorted(wartosci)
 
-    lista_wartosci_filtra["values"] = wartosci
+    lista_wartosci["values"] = wartosci
 
     if wartosci:
-        lista_wartosci_filtra.current(0)
+        lista_wartosci.current(0)
+
+
+def aktualizuj_filtr1(event=None):
+    aktualizuj_filtr(
+        wybrany_filtr,
+        lista_wartosci_filtra,
+        wybrana_wartosc_filtra
+    )
+
+
+def aktualizuj_filtr2(event=None):
+    aktualizuj_filtr(
+        wybrany_filtr2,
+        lista_wartosci_filtra2,
+        wybrana_wartosc_filtra2
+    )
+
 
 lista_filtrow.bind(
     "<<ComboboxSelected>>",
-    aktualizuj_wartosci_filtra
+    aktualizuj_filtr1
+)
+
+lista_filtrow2.bind(
+    "<<ComboboxSelected>>",
+    aktualizuj_filtr2
 )
 
 def pobierz_przefiltrowane_dane():
 
-    filtr = wybrany_filtr.get()
-    wartosc = wybrana_wartosc_filtra.get()
+    df_filtr = df.copy()
 
-    # Bez filtra -> cały zbiór
-    if filtr == "Brak filtra" or not filtr:
-        return df.copy()
+    # ----------------
+    # FILTR 1
+    # ----------------
 
-    if not wartosc:
-        return df.copy()
+    filtr1 = wybrany_filtr.get()
+    wartosc1 = wybrana_wartosc_filtra.get()
 
+    if filtr1 != "Brak filtra" and filtr1 and wartosc1:
+
+        dane_opisane1 = pobierz_dane_opisane(filtr1)
+
+        maska1 = (
+            dane_opisane1.astype(str)
+            == str(wartosc1)
+        )
+
+        df_filtr = df_filtr[maska1]
+
+
+    # ----------------
+    # FILTR 2
+    # ----------------
+
+    filtr2 = wybrany_filtr2.get()
+    wartosc2 = wybrana_wartosc_filtra2.get()
+
+    if filtr2 != "Brak filtra" and filtr2 and wartosc2:
+
+        mapa2 = pobierz_mape_etykiet(filtr2)
+
+        dane2 = df_filtr[filtr2].copy()
+
+        if mapa2:
+            dane2 = dane2.map(mapa2).fillna(dane2)
+
+        maska2 = (
+            dane2.astype(str)
+            == str(wartosc2)
+        )
+
+        df_filtr = df_filtr[maska2]
+
+    return df_filtr.copy()
     # Pobieramy wersję z Label
     dane_opisane = pobierz_dane_opisane(filtr)
 
@@ -474,5 +604,16 @@ def pobierz_przefiltrowane_dane():
     maska = dane_opisane.astype(str) == str(wartosc)
 
     return df[maska].copy()
+
+def wyczysc_filtry():
+
+    lista_filtrow.current(0)
+    lista_filtrow2.current(0)
+
+    wybrana_wartosc_filtra.set("")
+    wybrana_wartosc_filtra2.set("")
+
+    lista_wartosci_filtra["values"] = []
+    lista_wartosci_filtra2["values"] = []
 
 root.mainloop()
