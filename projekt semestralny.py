@@ -410,15 +410,33 @@ def pokaz_wykres():
     if not zmienna:
         return
 
-    dane = pobierz_dane_opisane(zmienna)
+    # Pobieramy dane po zastosowaniu obu filtrów
+    df_filtr = pobierz_przefiltrowane_dane()
 
+    # Pobieramy wybraną zmienną tylko z przefiltrowanych danych
+    dane = df_filtr[zmienna].copy()
+
+    # Zamiana kodów na etykiety ze słownika
+    mapa_etykiet = pobierz_mape_etykiet(zmienna)
+
+    if mapa_etykiet:
+        dane = dane.map(mapa_etykiet).fillna(dane)
+
+    # Liczebności kategorii
     liczebnosci = dane.value_counts()
 
     plt.figure(figsize=(9, 5))
 
-    liczebnosci.plot(
+    ax = liczebnosci.plot(
         kind="bar"
     )
+
+    for kontener in ax.containers:
+        ax.bar_label(
+            kontener,
+            padding=3,
+            fontsize=10
+        )
 
     plt.title(
         f"Rozkład zmiennej: {zmienna}"
