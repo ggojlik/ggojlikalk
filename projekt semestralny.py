@@ -14,6 +14,21 @@ df = pd.read_csv(
     decimal=","
 )
 
+print("\n=== REAKCJA NA SECPT-G ===")
+
+kolumny_secpt = [
+    "cort_s0",
+    "cort_s1",
+    "cort_s2"
+]
+
+print(
+    df[kolumny_secpt]
+    .describe()
+    .loc[["count", "mean", "std", "min", "max"]]
+)
+
+
 # Wczytanie słownika zmiennych
 slownik = pd.read_excel(
     BASE_DIR / "zmienne.xlsx",
@@ -589,6 +604,66 @@ def wyczysc_filtry():
     lista_wartosci_filtra["values"] = []
     lista_wartosci_filtra2["values"] = []
 
+def pokaz_reakcje_kortyzolu():
+
+    kolumny = [
+        "cort_s0",
+        "cort_s1",
+        "cort_s2"
+    ]
+
+    # Korzystamy również z aktualnie ustawionych filtrów
+    df_filtr = pobierz_przefiltrowane_dane()
+
+    srednie = df_filtr[kolumny].mean()
+    odchylenia = df_filtr[kolumny].std()
+
+    punkty_czasowe = [
+        "Przed SECPT-G",
+        "Bezpośrednio po",
+        "+10 min"
+    ]
+
+    plt.figure(figsize=(9, 5))
+
+    plt.plot(
+        punkty_czasowe,
+        srednie.values,
+        marker="o",
+        linewidth=2,
+        markersize=8
+    )
+
+    # Wartości średnich przy punktach
+    for x, y in zip(punkty_czasowe, srednie.values):
+        plt.annotate(
+            f"{y:.2f}",
+            (x, y),
+            textcoords="offset points",
+            xytext=(0, 10),
+            ha="center",
+            fontsize=10
+        )
+
+    plt.title(
+        "Reakcja kortyzolowa na SECPT-G",
+        fontsize=16,
+        fontweight="bold",
+        pad=20
+    )
+
+    plt.xlabel("")
+    plt.ylabel("Średnie stężenie kortyzolu")
+
+    plt.grid(
+        axis="y",
+        linestyle="--",
+        alpha=0.25
+    )
+
+    plt.tight_layout()
+    plt.show()
+
 przyciski = ttk.Frame(root)
 przyciski.pack(pady=(0, 20))
 
@@ -634,6 +709,19 @@ ttk.Button(
     row=0,
     column=3,
     padx=8
+)
+
+ttk.Button(
+    przyciski,
+    text="Reakcja kortyzolu",
+    command=pokaz_reakcje_kortyzolu,
+    width=20
+).grid(
+    row=1,
+    column=0,
+    columnspan=2,
+    padx=8,
+    pady=10
 )
 
 def aktualizuj_filtr(zmienna_var, lista_wartosci, wartosc_var):
@@ -774,8 +862,15 @@ def wyczysc_filtry():
     lista_wartosci_filtra["values"] = []
     lista_wartosci_filtra2["values"] = []
 
+
+
 print("sex ->", pobierz_nazwe_zmiennej("sex"))
 print("bmi_group ->", pobierz_nazwe_zmiennej("bmi_group"))
 print("smoking ->", pobierz_nazwe_zmiennej("smoking"))
+
+print("\n=== WSZYSTKIE KOLUMNY W DANYCH ===")
+
+for kolumna in df.columns:
+    print(kolumna)
 
 root.mainloop()
