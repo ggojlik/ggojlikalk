@@ -509,6 +509,44 @@ def pokaz_statystyki():
             tk.END,
             pokaz_statystyki_opisowe(zmienna, df_filtr)
         )
+def pokaz_wykres_rozrzutu():
+    dane = pobierz_przefiltrowane_dane()
+
+    kolumny = ["cort_s0", "cort_s2"]
+
+    pomiary = dane[kolumny].copy()
+
+    for kolumna in kolumny:
+        pomiary[kolumna] = pd.to_numeric(
+            pomiary[kolumna], errors="coerce"
+        )
+
+    pomiary = pomiary.replace(
+        [-99, -77], float("nan")
+    ).dropna()
+
+    if pomiary.empty:
+        messagebox.showwarning(
+            "Brak danych",
+            "Brak kompletnych pomiarów kortyzolu."
+        )
+        return
+
+    plt.figure(figsize=(9, 5))
+
+    plt.scatter(
+        pomiary["cort_s0"],
+        pomiary["cort_s2"],
+        alpha=0.5
+    )
+
+    plt.title("Kortyzol przed i po SECPT-G")
+    plt.xlabel("Kortyzol przed stresorem (cort_s0)")
+    plt.ylabel("Kortyzol po stresorze (cort_s2)")
+
+    plt.grid(linestyle="--", alpha=0.3)
+    plt.tight_layout()
+    plt.show()
 def pokaz_histogram(zmienna, df_filtr):
     dane = pd.to_numeric(df_filtr[zmienna], errors="coerce")
     dane = dane.replace([-99, -77], float("nan")).dropna()
@@ -832,6 +870,36 @@ def pokaz_analize_statystyczna():
 
     wynik = ttest_rel(pomiary[po], pomiary[przed])
 
+    zmiana = roznica.mean()
+
+    if wynik.pvalue < 0.05:
+        istotnosc = (
+            "Wykazano istotną statystycznie różnicę "
+            "między pomiarami."
+        )
+    else:
+        istotnosc = (
+            "Nie wykazano istotnej statystycznie "
+            "różnicy między pomiarami."
+        )
+
+    if zmiana > 0:
+        kierunek = "Średni poziom kortyzolu wzrósł."
+    elif zmiana < 0:
+        kierunek = "Średni poziom kortyzolu spadł."
+    else:
+        kierunek = "Średni poziom kortyzolu nie zmienił się."
+
+    podsumowanie = (
+            "\n\nPODSUMOWANIE I WNIOSKI\n"
+            + "=" * 40
+            + "\n"
+            + kierunek + "\n"
+            + istotnosc + "\n"
+            + "Analiza dotyczy danych syntetycznych "
+              "i ma charakter ilustracyjny."
+    )
+
     if wynik.pvalue < 0.05:
         interpretacja = "Różnica jest istotna statystycznie (p < 0,05)."
     else:
@@ -846,10 +914,12 @@ def pokaz_analize_statystyczna():
         f"Test t-Studenta dla prób zależnych:\n"
         f"t = {wynik.statistic:.3f}\n"
         f"p = {wynik.pvalue:.4f}\n\n"
-        f"{interpretacja}"
+            f"{interpretacja}"
+            f"{podsumowanie}"
     )
 
 def pokaz_reakcje_kortyzolu():
+    pokaz_wykres_rozrzutu()
 
     kolumny = [
         "cort_s0",
