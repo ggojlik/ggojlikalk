@@ -85,6 +85,10 @@ for zmienna in slownik["Variable"].dropna().unique():
     if nazwa in mapa_kolumn:
         wspolne_zmienne.append(mapa_kolumn[nazwa])
 
+# Dodajemy zmienne liczbowe do analizy
+for zmienna in ["cort_s0", "cort_s1", "cort_s2"]:
+    if zmienna in df.columns and zmienna not in wspolne_zmienne:
+        wspolne_zmienne.append(zmienna)
 # Kontrola
 print("\nZmienne dostępne w GUI:")
 print(wspolne_zmienne)
@@ -401,6 +405,26 @@ def pokaz_dane():
     )
 
 
+def pokaz_statystyki_opisowe(zmienna, df_filtr):
+    dane = pd.to_numeric(df_filtr[zmienna], errors="coerce")
+
+    # Usuwamy brakujące dane i specjalne kody braków
+    dane = dane.replace([-99, -77], float("nan")).dropna()
+
+    if dane.empty:
+        return "\nBrak poprawnych danych liczbowych do analizy.\n"
+
+    return (
+        "\n\nSTATYSTYKI OPISOWE\n"
+        + "=" * 60
+        + "\n"
+        + f"Liczba obserwacji: {len(dane)}\n"
+        + f"Średnia: {dane.mean():.3f}\n"
+        + f"Mediana: {dane.median():.3f}\n"
+        + f"Minimum: {dane.min():.3f}\n"
+        + f"Maksimum: {dane.max():.3f}\n"
+        + f"Odchylenie standardowe: {dane.std():.3f}\n"
+    )
 def pokaz_statystyki():
 
     zmienna = wybrana_zmienna.get()
@@ -444,7 +468,11 @@ def pokaz_statystyki():
         tabela.to_string()
     )
 
-
+    if pd.api.types.is_numeric_dtype(df_filtr[zmienna]):
+        wyniki.insert(
+            tk.END,
+            pokaz_statystyki_opisowe(zmienna, df_filtr)
+        )
 def pokaz_wykres():
 
     zmienna = wybrana_zmienna.get()
