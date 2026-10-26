@@ -509,6 +509,26 @@ def pokaz_statystyki():
             tk.END,
             pokaz_statystyki_opisowe(zmienna, df_filtr)
         )
+def pokaz_histogram(zmienna, df_filtr):
+    dane = pd.to_numeric(df_filtr[zmienna], errors="coerce")
+    dane = dane.replace([-99, -77], float("nan")).dropna()
+
+    if dane.empty:
+        messagebox.showwarning(
+            "Brak danych",
+            "Nie ma danych liczbowych do histogramu."
+        )
+        return
+
+    plt.figure(figsize=(9, 5))
+    plt.hist(dane, bins=20, edgecolor="black", alpha=0.8)
+
+    plt.title(f"Histogram zmiennej: {zmienna}")
+    plt.xlabel(zmienna)
+    plt.ylabel("Liczba obserwacji")
+    plt.grid(axis="y", linestyle="--", alpha=0.3)
+    plt.tight_layout()
+    plt.show()
 def pokaz_wykres():
 
     zmienna = wybrana_zmienna.get()
@@ -518,6 +538,9 @@ def pokaz_wykres():
 
     # Pobieramy dane po zastosowaniu obu filtrów
     df_filtr = pobierz_przefiltrowane_dane()
+    if zmienna in ["cort_s0", "cort_s1", "cort_s2"]:
+        pokaz_histogram(zmienna, df_filtr)
+        return
 
     # Pobieramy wybraną zmienną tylko z przefiltrowanych danych
     dane = df_filtr[zmienna].copy()
