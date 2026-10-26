@@ -1,4 +1,9 @@
+import sys
 import pandas as pd
+import os
+from pathlib import Path
+
+from tkinter import filedialog, messagebox
 from pathlib import Path
 
 # Lokalizacja projektu
@@ -105,7 +110,7 @@ def pobierz_mape_etykiet(zmienna):
 import tkinter as tk
 from tkinter import ttk
 import matplotlib.pyplot as plt
-
+from tkinter import filedialog, messagebox
 
 root = tk.Tk()
 root.title("Analiza danych")
@@ -604,6 +609,85 @@ def wyczysc_filtry():
     lista_wartosci_filtra["values"] = []
     lista_wartosci_filtra2["values"] = []
 
+def eksportuj_do_csv():
+    df_filtr = pobierz_przefiltrowane_dane()
+
+    if df_filtr.empty:
+        messagebox.showwarning(
+            "Brak danych",
+            "Nie ma rekordów do wyeksportowania."
+        )
+        return
+
+    sciezka = filedialog.asksaveasfilename(
+        defaultextension=".csv",
+        filetypes=[("Pliki CSV", "*.csv")],
+        initialfile="dane_przefiltrowane.csv",
+        title="Zapisz dane do CSV"
+    )
+
+    if not sciezka:
+        return
+
+    try:
+        df_filtr.to_csv(
+            sciezka,
+            sep=";",
+            decimal=",",
+            index=False,
+            encoding="utf-8-sig"
+        )
+
+        # Sprawdzenie, czy zapisany plik da się odczytać
+        with open(sciezka, "rb") as plik:
+            plik.read(10)
+
+        # Próba otwarcia pliku w domyślnej aplikacji
+        os.startfile(sciezka)
+
+        messagebox.showinfo(
+            "Eksport zakończony",
+            f"Zapisano {len(df_filtr)} rekordów.\n\n"
+            f"Ścieżka: {sciezka}"
+        )
+
+    except OSError as blad:
+        messagebox.showerror(
+            "Błąd eksportu lub otwierania",
+            str(blad)
+        )
+def kopiuj_dane_do_schowka():
+    df_filtr = pobierz_przefiltrowane_dane()
+
+    if df_filtr.empty:
+        messagebox.showwarning(
+            "Brak danych",
+            "Nie ma rekordów do skopiowania."
+        )
+        return
+
+    try:
+        tekst = df_filtr.to_csv(
+            sep="\t",
+            decimal=",",
+            index=False
+        )
+
+        root.clipboard_clear()
+        root.clipboard_append(tekst)
+        root.update()
+
+        messagebox.showinfo(
+            "Gotowe",
+            f"Skopiowano {len(df_filtr)} rekordów.\n"
+            "Otwórz Excel i naciśnij Ctrl+V."
+        )
+
+    except Exception as blad:
+        messagebox.showerror(
+            "Błąd kopiowania",
+            str(blad)
+        )
 def pokaz_reakcje_kortyzolu():
 
     kolumny = [
@@ -719,6 +803,31 @@ ttk.Button(
 ).grid(
     row=1,
     column=0,
+    columnspan=2,
+    padx=8,
+    pady=10
+)
+
+ttk.Button(
+    przyciski,
+    text="Eksportuj do CSV",
+    command=eksportuj_do_csv,
+    width=20
+).grid(
+    row=1,
+    column=2,
+    columnspan=2,
+    padx=8,
+    pady=10
+)
+ttk.Button(
+    przyciski,
+    text="Kopiuj do Excela",
+    command=kopiuj_dane_do_schowka,
+    width=20
+).grid(
+    row=1,
+    column=4,
     columnspan=2,
     padx=8,
     pady=10
