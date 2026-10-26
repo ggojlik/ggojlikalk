@@ -608,15 +608,46 @@ def wyczysc_filtry():
 
     lista_wartosci_filtra["values"] = []
     lista_wartosci_filtra2["values"] = []
+def pokaz_komunikat_eksportu():
+    komunikat = tk.Toplevel()
+    komunikat.title("Informacja o eksporcie")
+    komunikat.geometry("650x540")
+    komunikat.resizable(False, False)
 
+    sciezka_zdjecia = Path(__file__).resolve().parent / "foka.jpeg"
+
+    from PIL import Image, ImageTk
+
+    zdjecie = Image.open(sciezka_zdjecia)
+    zdjecie.thumbnail((600, 390))
+
+    obraz = ImageTk.PhotoImage(zdjecie)
+
+    etykieta_zdjecia = ttk.Label(komunikat, image=obraz)
+    etykieta_zdjecia.image = obraz
+    etykieta_zdjecia.pack(pady=15)
+
+    ttk.Label(
+        komunikat,
+        text=(
+            "Nie można wyświetlić wyeksportowanego pliku CSV.\n\n"
+            "Skorzystaj z przycisku „Kopiuj do Excela”,\n"
+            "a następnie wklej dane przez Ctrl+V."
+        ),
+        justify="center",
+        font=("Arial", 11)
+    ).pack(pady=10)
+
+    ttk.Button(
+        komunikat,
+        text="OK",
+        command=komunikat.destroy
+    ).pack(pady=10)
 def eksportuj_do_csv():
     df_filtr = pobierz_przefiltrowane_dane()
 
     if df_filtr.empty:
-        messagebox.showwarning(
-            "Brak danych",
-            "Nie ma rekordów do wyeksportowania."
-        )
+        pokaz_komunikat_eksportu()
         return
 
     sciezka = filedialog.asksaveasfilename(
@@ -638,24 +669,12 @@ def eksportuj_do_csv():
             encoding="utf-8-sig"
         )
 
-        # Sprawdzenie, czy zapisany plik da się odczytać
-        with open(sciezka, "rb") as plik:
-            plik.read(10)
-
-        # Próba otwarcia pliku w domyślnej aplikacji
-        os.startfile(sciezka)
-
-        messagebox.showinfo(
-            "Eksport zakończony",
-            f"Zapisano {len(df_filtr)} rekordów.\n\n"
-            f"Ścieżka: {sciezka}"
-        )
+        pokaz_komunikat_eksportu()
 
     except OSError as blad:
-        messagebox.showerror(
-            "Błąd eksportu lub otwierania",
-            str(blad)
-        )
+        messagebox.showerror("Błąd eksportu", str(blad))
+
+
 def kopiuj_dane_do_schowka():
     df_filtr = pobierz_przefiltrowane_dane()
 
