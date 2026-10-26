@@ -66,10 +66,13 @@ W tej sekcji zostaną umieszczone zrzuty ekranu prezentujące:
 - Główne okno aplikacji.
 ![Główne okno aplikacji](zrzuty%20ekranu/okno_glowne.png)
 - Statystyki opisowe.
-- ![Statystyki opisowe](zrzuty%20ekranu/statystyki.png)
+![Statystyki opisowe](zrzuty%20ekranu/statystyki.png)
 - Histogram kortyzolu.
+![Histogram kortyzolu](zrzuty%20ekranu/Histogram kortyzolu.png)
 - Wykres rozrzutu.
+![Wykres rozrzutu](zrzuty%20ekranu/Wykres rozrzutu.png)
 - Wyniki analizy statystycznej.
+![Wyniki analizy statystycznej](zrzuty%20ekranu/Wyniki%20analizy%20statystycznej.png)
 
 ## 6. Wykorzystanie sztucznej inteligencji
 
