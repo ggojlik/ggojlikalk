@@ -64,6 +64,9 @@ Aplikacja automatycznie wczytuje dane podczas uruchamiania.
 W tej sekcji zostaną umieszczone zrzuty ekranu prezentujące:
 
 - Główne okno aplikacji.
+- - ### Główne okno aplikacji
+
+![Główne okno aplikacji](zrzuty%20ekranu/okno_glowne.png)
 - Statystyki opisowe.
 - Histogram kortyzolu.
 - Wykres rozrzutu.
