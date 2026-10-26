@@ -425,6 +425,42 @@ def pokaz_statystyki_opisowe(zmienna, df_filtr):
         + f"Maksimum: {dane.max():.3f}\n"
         + f"Odchylenie standardowe: {dane.std():.3f}\n"
     )
+def porownaj_grupy_kortyzolu():
+    dane = pobierz_przefiltrowane_dane()
+
+    kolumny = ["sex", "cort_s0"]
+
+    if not all(k in dane.columns for k in kolumny):
+        messagebox.showerror(
+            "Błąd",
+            "Brakuje danych o płci lub kortyzolu."
+        )
+        return
+
+    tabela = dane[kolumny].copy()
+
+    tabela["cort_s0"] = pd.to_numeric(
+        tabela["cort_s0"], errors="coerce"
+    )
+
+    tabela["cort_s0"] = tabela["cort_s0"].replace(
+        [-99, -77], float("nan")
+    )
+
+    tabela = tabela.dropna()
+
+    wynik = tabela.groupby("sex")["cort_s0"].agg(
+        ["count", "mean", "median", "std"]
+    ).round(3)
+
+    wyniki.delete("1.0", tk.END)
+    wyniki.insert(
+        tk.END,
+        "PORÓWNANIE GRUP – KORTYZOL PRZED SECPT-G\n"
+        + "=" * 60
+        + "\n\n"
+        + wynik.to_string()
+    )
 def pokaz_statystyki():
 
     zmienna = wybrana_zmienna.get()
@@ -942,6 +978,18 @@ ttk.Button(
 ).grid(
     row=0,
     column=4,
+    columnspan=2,
+    padx=8,
+    pady=10
+)
+ttk.Button(
+    przyciski,
+    text="Porównaj grupy",
+    command=porownaj_grupy_kortyzolu,
+    width=20
+).grid(
+    row=1,
+    column=6,
     columnspan=2,
     padx=8,
     pady=10
