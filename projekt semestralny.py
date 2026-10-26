@@ -4,8 +4,7 @@ import os
 from pathlib import Path
 
 from tkinter import filedialog, messagebox
-from pathlib import Path
-
+from scipy.stats import ttest_rel
 # Lokalizacja projektu
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -110,11 +109,9 @@ def pobierz_mape_etykiet(zmienna):
 import tkinter as tk
 from tkinter import ttk
 import matplotlib.pyplot as plt
-from tkinter import filedialog, messagebox
-
 root = tk.Tk()
 root.title("Analiza danych")
-root.geometry("950x700")
+root.geometry("1100x850")
 root.minsize(800, 600)
 
 
@@ -296,7 +293,7 @@ ramka_wyniki.pack(
 
 wyniki = tk.Text(
     ramka_wyniki,
-    height=20,
+    height=12,
     width=90,
     font=("Consolas", 10),
     wrap="none"
@@ -707,6 +704,64 @@ def kopiuj_dane_do_schowka():
             "Błąd kopiowania",
             str(blad)
         )
+def pokaz_analize_statystyczna():
+    dane = pobierz_przefiltrowane_dane()
+
+    przed = "cort_s0"
+    po = "cort_s2"
+
+    if przed not in dane.columns or po not in dane.columns:
+        messagebox.showerror(
+            "Błąd",
+            "Brakuje kolumn z pomiarami kortyzolu."
+        )
+        return
+
+    pomiary = dane[[przed, po]].copy()
+
+    pomiary[przed] = pd.to_numeric(pomiary[przed], errors="coerce")
+    pomiary[po] = pd.to_numeric(pomiary[po], errors="coerce")
+
+    # Usuwamy brakujące pomiary oraz specjalne kody braków danych
+    pomiary = pomiary.replace([-99, -77], float("nan")).dropna()
+
+    if len(pomiary) < 2:
+        messagebox.showwarning(
+            "Za mało danych",
+            "Do analizy potrzebne są co najmniej dwa kompletne pomiary."
+        )
+        return
+
+    srednia_przed = pomiary[przed].mean()
+    srednia_po = pomiary[po].mean()
+    roznica = pomiary[po] - pomiary[przed]
+
+    if roznica.std() == 0:
+        messagebox.showwarning(
+            "Brak zmienności",
+            "Nie można wykonać testu t, ponieważ różnice między pomiarami są stałe."
+        )
+        return
+
+    wynik = ttest_rel(pomiary[po], pomiary[przed])
+
+    if wynik.pvalue < 0.05:
+        interpretacja = "Różnica jest istotna statystycznie (p < 0,05)."
+    else:
+        interpretacja = "Nie stwierdzono istotnej statystycznie różnicy (p ≥ 0,05)."
+
+    messagebox.showinfo(
+        "Analiza statystyczna kortyzolu",
+        f"Liczba osób: {len(pomiary)}\n\n"
+        f"Średnia przed stresorem: {srednia_przed:.3f}\n"
+        f"Średnia po stresorze: {srednia_po:.3f}\n"
+        f"Średnia zmiana: {roznica.mean():+.3f}\n\n"
+        f"Test t-Studenta dla prób zależnych:\n"
+        f"t = {wynik.statistic:.3f}\n"
+        f"p = {wynik.pvalue:.4f}\n\n"
+        f"{interpretacja}"
+    )
+
 def pokaz_reakcje_kortyzolu():
 
     kolumny = [
@@ -851,7 +906,18 @@ ttk.Button(
     padx=8,
     pady=10
 )
-
+ttk.Button(
+    przyciski,
+    text="Analiza statystyczna",
+    command=pokaz_analize_statystyczna,
+    width=20
+).grid(
+    row=0,
+    column=4,
+    columnspan=2,
+    padx=8,
+    pady=10
+)
 def aktualizuj_filtr(zmienna_var, lista_wartosci, wartosc_var):
 
     zmienna = zmienna_var.get()
@@ -971,13 +1037,6 @@ def pobierz_przefiltrowane_dane():
         df_filtr = df_filtr[maska2]
 
     return df_filtr.copy()
-    # Pobieramy wersję z Label
-    dane_opisane = pobierz_dane_opisane(filtr)
-
-    # Porównujemy etykietę wybraną w GUI
-    maska = dane_opisane.astype(str) == str(wartosc)
-
-    return df[maska].copy()
 
 def wyczysc_filtry():
 
