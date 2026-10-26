@@ -68,9 +68,9 @@ W tej sekcji zostaną umieszczone zrzuty ekranu prezentujące:
 - Statystyki opisowe.
 ![Statystyki opisowe](zrzuty%20ekranu/statystyki.png)
 - Histogram kortyzolu.
-![Histogram kortyzolu](zrzuty%20ekranu/Histogram kortyzolu.png)
+![Histogram kortyzolu](zrzuty%20ekranu/Histogram%20kortyzolu.png)
 - Wykres rozrzutu.
-![Wykres rozrzutu](zrzuty%20ekranu/Wykres rozrzutu.png)
+![Wykres rozrzutu](zrzuty%20ekranu/Wykres%20rozrzutu.png)
 - Wyniki analizy statystycznej.
 ![Wyniki analizy statystycznej](zrzuty%20ekranu/Wyniki%20analizy%20statystycznej.png)
 
